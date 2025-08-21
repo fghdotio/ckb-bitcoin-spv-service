@@ -1,0 +1,36 @@
+# Runtime data directories
+testnet3-spv-data/
+logs/
+*.log
+
+# Git directory
+.git/
+.gitignore
+
+# Build artifacts
+target/
+# Cargo.lock - needed for reproducible builds in Docker
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker files (not needed in build context)
+docker-compose.yml
+docker.env
+start-service.sh
+docker-compose.md
+
+# Documentation
+README.md
+LICENSE
+
+# Key files (security)
+*.key
+*.pem
+
+# Temporary files
+.tmp/
+tmp/

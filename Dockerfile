@@ -1,12 +1,30 @@
-FROM rust:latest AS builder
+FROM rust:1.89 AS builder
+# Debian GNU/Linux 13 (trixie)
 
 WORKDIR /app
-COPY . /app
 
-RUN apt-get update && apt-get install --no-install-recommends -y clang
-RUN cargo build --release
+# Install build dependencies
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    clang \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
-FROM ubuntu:latest
+# Copy dependency files first for better caching
+COPY Cargo.toml Cargo.lock ./
+
+# Create a dummy main.rs to build dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+
+# Build dependencies (this layer will be cached)
+RUN cargo build --release --locked && rm -rf src target/release/deps/ckb_bitcoin_spv_service*
+
+# Copy source code
+COPY src ./src
+
+# Build the actual application
+RUN cargo build --release --locked
+
+FROM debian:trixie-slim
 
 ARG DEBCONF_NOWARNINGS="yes"
 ARG DEBIAN_FRONTEND noninteractive
@@ -15,6 +33,8 @@ ARG DEBCONF_NONINTERACTIVE_SEEN true
 RUN apt-get update \
  && apt-get install --no-install-recommends -y \
     ca-certificates \
+    curl \
+    netcat-openbsd \
     tini \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

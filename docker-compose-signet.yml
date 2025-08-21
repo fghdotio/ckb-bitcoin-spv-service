@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  ckb-bitcoin-spv-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ckb-bitcoin-spv-service-signet
+    restart: unless-stopped
+    ports:
+      - "${LISTEN_PORT:-8888}:8888"
+    volumes:
+      - "./signet-spv-data:/app/data"
+      - "../spv-updater-signet.bin.key:/app/spv.owner.key:ro"
+      - "./logs:/app/logs"
+    env_file:
+      - docker-signet.env
+    environment:
+      - RUST_LOG=${RUST_LOG:-info}
+    command: >
+      sh -c "
+      ckb-bitcoin-spv-service serve
+      --ckb-endpoint \"$${CKB_ENDPOINT}\"
+      --bitcoin-endpoint \"$${BITCOIN_ENDPOINT}\"
+      --data-dir /app/data
+      --bitcoin-endpoint-username \"$${BITCOIN_USERNAME}\"
+      --bitcoin-endpoint-password \"$${BITCOIN_PASSWORD}\"
+      --key-file /app/spv.owner.key
+      --listen-address 0.0.0.0:8888
+      --spv-contract-out-point \"$${SPV_CONTRACT_OUT_POINT}\"
+      --spv-headers-update-limit $${SPV_HEADERS_UPDATE_LIMIT:-30}
+      --interval $${INTERVAL:-30}
+      --bitcoin-headers-download-batch-size $${BITCOIN_HEADERS_DOWNLOAD_BATCH_SIZE:-30}
+      --ckb-fee-rate $${CKB_FEE_RATE:-1000}
+      --network-type $${NETWORK_TYPE:-testnet}
+      "
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8888"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  spv-data:
+  logs:
+# nohup cargo run -- serve --ckb-endpoint  https://testnet.ckb.dev/ --bitcoin-endpoint http://3.143.202.102:18332 --data-dir ./testnet3-spv-data --bitcoin-endpoint-username devrel --bitcoin-endpoint-password ckb_testnet_indexer --key-file ../deploy.bin.key --listen-address 127.0.0.1:8888 --spv-contract-out-point 0xcd8f8b49b69ba58fa0acb04a6541543048f1a5758d22230938afd25a57ed0bec00000000 --spv-headers-update-limit 30 > testnet3.log 2>&1 &
