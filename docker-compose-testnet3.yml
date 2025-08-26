@@ -33,6 +33,7 @@ services:
       --bitcoin-headers-download-batch-size $${BITCOIN_HEADERS_DOWNLOAD_BATCH_SIZE:-30}
       --ckb-fee-rate $${CKB_FEE_RATE:-1000}
       --network-type $${NETWORK_TYPE:-testnet}
+      --electrs-endpoint \"$${ELECTRS_ENDPOINT}\"
       "
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "8888"]
